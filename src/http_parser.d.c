@@ -53,3 +53,7 @@ void duv_set_http_parser_data(http_parser * parser, void* data) {
 unsigned char duv_http_parser_get_errno(http_parser * parser) {
   return parser->http_errno;
 }
+
+const char * duv_http_method_str(http_parser * parser) {
+    return http_method_str(parser->method);
+}

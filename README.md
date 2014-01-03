@@ -20,6 +20,11 @@ http-parser.D = [joyent/http-parser](https://github.com/joyent/http-parser/) in 
 	};
 	parser.onStatusComplete = (parser) {
 		writeln("HTTP status is complete");
+        // if parsing request, this is a good spot to query for:
+        if(parser.type == HttpParserType.REQUEST) {
+            string method = parser.method; // GET
+            writeln("Method: ", method);
+        }
 	};
 	parser.onHeader = (parser, HttpHeader header) {
 		writeln("Parser Header '", header.name, "' with value '", header.value, "'");
@@ -37,6 +42,8 @@ http-parser.D = [joyent/http-parser](https://github.com/joyent/http-parser/) in 
 
 
 Output:
+
+
 	Message has just begun
 	Url of HTTP message is: /
 	Parser Header 'FirstHeader' with value 'ValueOfFirst Header'

@@ -223,6 +223,10 @@ public class HttpParser {
     @property void onHeader(HttpParserHeaderDelegate callback) {
       _onHeader = callback;
     }
+
+    @property string method() {
+        return std.conv.to!string(duv_http_method_str(_parser));
+    }
   }
 
   package {

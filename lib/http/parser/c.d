@@ -66,3 +66,5 @@ template http_parser_cb(string Name) {
 template http_parser_data_cb(string Name) {
 	const char[] http_parser_data_cb = "static int duv_http_parser_" ~ Name ~ "(http_parser * parser, ubyte * at, size_t len) { HttpParser self = cast(HttpParser)duv_get_http_parser_data(parser); return self._" ~ Name ~ "(at[0 .. len]); }";
 }
+
+immutable(char) * duv_http_method_str(http_parser * parser);

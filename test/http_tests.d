@@ -94,6 +94,22 @@ unittest {
           assert(lastException.msg == customErrorMessage, "Exception raised doesn't have the given exception");
           assert(st == "OK");
         });
+        runTest("onStatusComplete Request", {
+          Exception lastException;
+          auto parser = new HttpParser(HttpParserType.REQUEST);
+          string st;
+          parser.onStatusComplete = (parser, status) {
+            st = status;
+          };
+          try {
+            parser.execute(cast(ubyte[])"GET / HTTP/1.1\r\n\r\n");
+          } catch(Exception ex) {
+            lastException = ex;
+          }
+          assert(lastException is null);
+          assert(st == "");
+          assert(parser.method == "GET");
+        });
       }); //Exceptions
       scopeTest("Headers", {
         runTest("chunked", {
