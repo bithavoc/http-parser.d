@@ -85,7 +85,7 @@ public class HttpParser {
     extern(C) {
       mixin(http_parser_cb!("on_message_begin"));
       mixin(http_parser_data_cb!("on_url"));
-      mixin(http_parser_cb!("on_status_complete"));
+      mixin(http_parser_data_cb!("on_status_complete"));
       mixin(http_parser_data_cb!("on_header_value"));
       mixin(http_parser_data_cb!("on_header_field"));
       mixin(http_parser_cb!("on_headers_complete"));
@@ -98,9 +98,9 @@ public class HttpParser {
     HttpParserType _type;
 
     // delegates
-    HttpParserDelegate _messageBegin, _messageComplete, _headersComplete, _statusComplete;
+    HttpParserDelegate _messageBegin, _messageComplete, _headersComplete;
     HttpParserDataDelegate _onBody;
-    HttpParserStringDelegate _onUrl;
+    HttpParserStringDelegate _onUrl, _statusComplete;
     HttpParserHeaderDelegate _onHeader;
     Throwable _lastException;
 
@@ -189,10 +189,10 @@ public class HttpParser {
       _messageComplete = callback;
     }
 
-    @property HttpParserDelegate onStatusComplete() {
+    @property HttpParserStringDelegate onStatusComplete() {
       return _statusComplete;
     }
-    @property void onStatusComplete(HttpParserDelegate callback) {
+    @property void onStatusComplete(HttpParserStringDelegate callback) {
       _statusComplete = callback;
     }
 
@@ -251,10 +251,10 @@ public class HttpParser {
       return CB_OK;
     }
 
-    int _on_status_complete() {
+    int _on_status_complete(ubyte[] data) {
       if(this._statusComplete) {
         try {
-          _statusComplete(this);
+          _statusComplete(this, cast(string)data);
         } catch(Throwable ex) {
           _lastException = ex;
           return CB_ERR;

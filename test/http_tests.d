@@ -80,7 +80,9 @@ unittest {
         runTest("onStatusComplete", {
           Exception lastException;
           auto parser = new HttpParser(HttpParserType.RESPONSE);
-          parser.onStatusComplete = (parser) {
+          string st;
+          parser.onStatusComplete = (parser, status) {
+            st = status;
             throw new Exception(customErrorMessage);
           };
           try {
@@ -90,6 +92,7 @@ unittest {
           }
           assert(lastException !is null, "Custom exception was not cached and throwed by the execute method");
           assert(lastException.msg == customErrorMessage, "Exception raised doesn't have the given exception");
+          assert(st == "OK");
         });
       }); //Exceptions
       scopeTest("Headers", {
@@ -141,7 +144,9 @@ unittest {
           Exception lastException;
           auto parser = new HttpParser(HttpParserType.RESPONSE);
           bool callbackCalled = false;
-          parser.onStatusComplete = (parser) {
+          string status = null;
+          parser.onStatusComplete = (parser, st) {
+            status = st;
             callbackCalled = true;
           };
           try {
@@ -151,6 +156,7 @@ unittest {
           }
           assert(lastException is null, "No exception should be throwed");
           assert(callbackCalled, "onStatusCompleted callback must be invoked");
+          assert(status == "OK");
         });
       });
     }); //HttpParser

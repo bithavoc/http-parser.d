@@ -35,7 +35,7 @@ void main() {
   parser.onUrl = (parser, string data) {
     writeln("Url of HTTP message is: ", data);
   };
-  parser.onStatusComplete = (parser) {
+  parser.onStatusComplete = (parser, string data) {
     writeln("HTTP status is complete");
   };
   parser.onHeader = (parser, HttpHeader header) {
