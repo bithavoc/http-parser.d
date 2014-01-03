@@ -47,8 +47,6 @@ Output:
 
 ## Building
 
-    git clone https://github.com/heapsource/http-parser.d.git
-	git submodule update --init
 	make
 
 An archive will be generated in `out/http-parser.a` containing joyent/http-parser objects and the http-parser.d object itself.
@@ -66,7 +64,7 @@ Use `make examples` to compile all the examples. Executables will be generated i
 
 ## License (MIT)
 
-Copyright (c) 2012, 2013 Heapsource.com - http://www.heapsource.com
+Copyright (c) 2013, 2014 Heapsource.com - http://www.heapsource.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
