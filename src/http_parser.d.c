@@ -57,3 +57,13 @@ unsigned char duv_http_parser_get_errno(http_parser * parser) {
 const char * duv_http_method_str(http_parser * parser) {
     return http_method_str(parser->method);
 }
+
+unsigned short duv_http_major(http_parser * parser) {
+    return parser->http_major;
+}
+unsigned short duv_http_minor(http_parser * parser) {
+    return parser->http_minor;
+}
+unsigned int duv_http_status_code(http_parser * parser) {
+    return parser->status_code;
+}

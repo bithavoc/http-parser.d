@@ -31,6 +31,31 @@ enum HttpParserType {
   BOTH
 };
 
+public struct HttpVersion {
+    private:
+        ushort _minor;
+        ushort _major;
+        string _str;
+    public:
+        this(ushort major, ushort minor) {
+            _major = major;
+            _minor = minor;
+            _str = std.string.format("%d.%d", _major, _minor);
+        }
+
+        @property {
+            ushort major() pure nothrow {
+                return _major;
+            }
+            ushort minor() pure nothrow {
+                return _minor;
+            }
+        }
+
+        string toString() {
+            return _str;
+        }
+}
 public struct HttpHeader {
   package string _name, _value;
 
@@ -171,6 +196,10 @@ public class HttpParser {
       return ret;
     }
 
+    @property HttpVersion protocolVersion() {
+        return HttpVersion(duv_http_major(_parser), duv_http_minor(_parser));
+    }
+
     @property HttpParserType type() {
       return _type;
     }
@@ -254,6 +283,7 @@ public class HttpParser {
       }
       return CB_OK;
     }
+
 
     int _on_status_complete(ubyte[] data) {
       if(this._statusComplete) {

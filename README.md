@@ -25,6 +25,7 @@ http-parser.D = [joyent/http-parser](https://github.com/joyent/http-parser/) in 
             string method = parser.method; // GET
             writeln("Method: ", method);
         }
+        auto version = parser.protocolVersion.toString; // 1.1
 	};
 	parser.onHeader = (parser, HttpHeader header) {
 		writeln("Parser Header '", header.name, "' with value '", header.value, "'");

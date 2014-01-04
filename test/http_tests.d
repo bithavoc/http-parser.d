@@ -174,6 +174,52 @@ unittest {
           assert(callbackCalled, "onStatusCompleted callback must be invoked");
           assert(status == "OK");
         });
+        runTest("http 1.1 version", {
+          Exception lastException;
+          auto parser = new HttpParser(HttpParserType.RESPONSE);
+          bool callbackCalled = false;
+          string status = null;
+          HttpVersion v;
+          parser.onStatusComplete = (parser, st) {
+            status = st;
+            v = parser.protocolVersion;
+            callbackCalled = true;
+          };
+          try {
+            parser.execute(cast(ubyte[])"HTTP/1.1 200 OK\r\n");
+          } catch(Exception ex) {
+            lastException = ex;
+          }
+          assert(lastException is null, "No exception should be throwed");
+          assert(callbackCalled, "onStatusCompleted callback must be invoked");
+          assert(status == "OK");
+          assert(v.toString == "1.1");
+          assert(v.minor == 1);
+          assert(v.major == 1);
+        });
+        runTest("http 1.0 version", {
+          Exception lastException;
+          auto parser = new HttpParser(HttpParserType.RESPONSE);
+          bool callbackCalled = false;
+          string status = null;
+          HttpVersion v;
+          parser.onStatusComplete = (parser, st) {
+            status = st;
+            v = parser.protocolVersion;
+            callbackCalled = true;
+          };
+          try {
+            parser.execute(cast(ubyte[])"HTTP/1.0 200 OK\r\n");
+          } catch(Exception ex) {
+            lastException = ex;
+          }
+          assert(lastException is null, "No exception should be throwed");
+          assert(callbackCalled, "onStatusCompleted callback must be invoked");
+          assert(status == "OK");
+          assert(v.toString == "1.0");
+          assert(v.minor == 0);
+          assert(v.major == 1);
+        });
       });
     }); //HttpParser
   }

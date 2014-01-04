@@ -68,3 +68,7 @@ template http_parser_data_cb(string Name) {
 }
 
 immutable(char) * duv_http_method_str(http_parser * parser);
+
+ushort duv_http_major(http_parser * parser);
+ushort duv_http_minor(http_parser * parser);
+uint duv_http_status_code(http_parser * parser);
