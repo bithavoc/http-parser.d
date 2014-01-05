@@ -4,6 +4,13 @@ DFLAGS=-gc -gs -g
 ifeq (${OS_NAME},Darwin)
 	DFLAGS+=-L-framework -LCoreServices 
 endif
+HTTP_PARSER_LIB_BUILD=
+ifeq (${DEBUG}, 1)
+	DFLAGS=-debug -gc -gs -g
+else
+	DFLAGS=-O -release -inline -noboundscheck
+	HTTP_PARSER_LIB_BUILD=package
+endif
 DC=dmd
 
 build: http-parser.d
@@ -27,7 +34,7 @@ deps/http-parser/http_parser.o:
 	@echo "Compiling deps/http-parser"
 	git submodule update --init  --remote deps/http-parser
 	mkdir -p out/di
-	(cd deps/http-parser; $(MAKE))
+	(cd deps/http-parser; $(MAKE) $(HTTP_PARSER_LIB_BUILD))
 	cp deps/http-parser/http_parser.o out/http-parser.o
 
 http-parser.d.c: deps/http-parser/http_parser.o
