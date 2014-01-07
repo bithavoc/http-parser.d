@@ -25,7 +25,7 @@
 #include "http_parser.h"
 
 http_parser * duv_alloc_http_parser() {
-  return malloc(sizeof(http_parser));
+  return calloc(1, sizeof(http_parser));
 }
 
 void duv_free_http_parser(http_parser * parser) {
