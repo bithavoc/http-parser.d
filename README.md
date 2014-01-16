@@ -52,6 +52,25 @@ Output:
 	A chunk of the HTTP bady has been processed: [1, 2, 3]
 	Message has been completed
 
+## Uri
+
+Uri parsing is provided by the class `http.parser.Uri`.
+
+```D
+import http.parser : Uri;
+
+//...
+
+Uri uri = new Uri("http://user1:password1@google.com:9000/myResource?indent=1#page_2");
+string schema = uri.schema; // -> "http"
+string credentials = uri.userInfo; // -> "user1:password1"
+string host = uri.host; // -> "google.com"
+ushort port = uri.port; // -> 9000
+string path = uri.path; // -> "/myResource"
+string query = uri.query; // -> "ident=1"
+string fragment = uri.fragment; // -> "page_2"
+
+```
 
 ## Building
 

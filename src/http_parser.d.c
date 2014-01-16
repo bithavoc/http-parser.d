@@ -67,3 +67,27 @@ unsigned short duv_http_minor(http_parser * parser) {
 unsigned int duv_http_status_code(http_parser * parser) {
     return parser->status_code;
 }
+
+size_t http_parser_url_size() {
+    return sizeof(struct http_parser_url);
+}
+
+typedef struct {
+    uint16_t off;
+    uint16_t len;
+} http_parser_url_field;
+
+http_parser_url_field http_parser_get_field(struct http_parser_url * url, int field) {
+    http_parser_url_field f;
+    f.off = url->field_data[field].off;
+    f.len = url->field_data[field].len;
+    return f;
+}
+
+uint16_t http_parser_get_port(struct http_parser_url * url) {
+    return url->port;
+}
+
+uint16_t http_parser_get_fieldset(struct http_parser_url * url) {
+    return url->field_set;
+}

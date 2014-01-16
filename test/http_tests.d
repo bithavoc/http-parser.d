@@ -220,6 +220,20 @@ unittest {
           assert(v.minor == 0);
           assert(v.major == 1);
         });
+        runTest("URI schema", {
+            Uri uri = Uri("testschema://jhon:doe@hello.com/root/sub?delete=1#paragraph1");
+            assert(uri.schema == "testschema", "parsed schema is not 'testschema'");
+            assert(uri.host == "hello.com", "parsed host is not 'hello.com', current is " ~ uri.host);
+            assert(uri.port == 0, "parsed port is not '0', current is " ~ std.conv.to!string(uri.port));
+            assert(uri.path == "/root/sub", "parsed path is not '/root/sub', current is " ~ uri.path);
+            assert(uri.query == "delete=1", "parsed query is not 'delete=1', current is " ~ uri.query);
+            assert(uri.fragment == "paragraph1", "parsed fragment is not 'paragraph1', current is " ~ uri.fragment);
+            assert(uri.userInfo == "jhon:doe", "parsed userInfo is not 'jhon:doe', current is " ~ uri.userInfo);
+        });
+        runTest("URI special port", {
+            Uri uri = Uri("testschema://hello.com:9000");
+            assert(uri.port == 9000, "parsed port is not '9000', current is " ~ std.conv.to!string(uri.port));
+        });
       });
     }); //HttpParser
   }

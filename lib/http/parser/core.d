@@ -24,6 +24,8 @@ module http.parser.core;
 import http.parser.c;
 import std.stdio;
 import std.conv;
+import std.string : toStringz;
+import std.stdint : uint16_t;
 
 enum HttpParserType {
   REQUEST,
@@ -377,4 +379,72 @@ public class HttpParser {
       _parser = null;
     }
   }
+}
+
+struct Uri {
+    private:
+        string _schema, _host, _path, _query, _fragment, _userInfo;
+        ushort _port;
+
+    public:
+        this(in string rawUri, bool isConnect = false) {
+            http_parser_url * url = alloc_http_parser_url();
+            scope (exit) free_http_parser_url(url);
+            immutable(char) * buff = rawUri.toStringz;
+            int res = http_parser_parse_url(buff, rawUri.length, isConnect ? 1 : 0, url);
+            if(res != 0) {
+                throw new Exception("Failed to parse rawUri");
+            }
+
+            auto port = http_parser_get_port(url);
+            auto schema = http_parser_get_field_string(url, rawUri, http_parser_url_fields.UF_SCHEMA);
+            auto host = http_parser_get_field_string(url, rawUri, http_parser_url_fields.UF_HOST);
+            auto path = http_parser_get_field_string(url, rawUri, http_parser_url_fields.UF_PATH);
+            auto query = http_parser_get_field_string(url, rawUri, http_parser_url_fields.UF_QUERY);
+            auto fragment = http_parser_get_field_string(url, rawUri, http_parser_url_fields.UF_FRAGMENT);
+            auto userInfo = http_parser_get_field_string(url, rawUri, http_parser_url_fields.UF_USERINFO);
+
+            this(schema, host, port, path, query, fragment, userInfo);
+        }
+
+        this(in string schema, in string host, in ushort port, in string path, in string query, in string fragment, in string userInfo) {
+            _schema = schema;
+            _host = host;
+            _port = port;
+            _path = path;
+            _query = query;
+            _fragment = fragment;
+            _userInfo = userInfo;
+        }
+
+    @property {
+
+        string schema() pure nothrow {
+            return _schema;
+        }
+
+        string host() pure nothrow {
+            return _host;
+        }
+
+        ushort port() pure nothrow {
+            return _port;
+        }
+
+        string path() pure nothrow {
+            return _path;
+        }
+
+        string query() pure nothrow {
+            return _query;
+        }
+
+        string fragment() pure nothrow {
+            return _fragment;
+        }
+
+        string userInfo() pure nothrow {
+            return _userInfo;
+        }
+    }
 }

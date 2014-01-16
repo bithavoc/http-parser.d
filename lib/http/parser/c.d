@@ -72,3 +72,52 @@ immutable(char) * duv_http_method_str(http_parser * parser);
 ushort duv_http_major(http_parser * parser);
 ushort duv_http_minor(http_parser * parser);
 uint duv_http_status_code(http_parser * parser);
+
+enum http_parser_url_fields
+  { 
+      UF_SCHEMA           = 0,
+      UF_HOST             = 1,
+      UF_PORT             = 2,
+      UF_PATH             = 3,
+      UF_QUERY            = 4,
+      UF_FRAGMENT         = 5,
+      UF_USERINFO         = 6,
+      UF_MAX              = 7,
+  };
+
+struct http_parser_url;
+
+int http_parser_parse_url(immutable(char)* buf, size_t buflen, int is_connect, http_parser_url *u);
+
+size_t http_parser_url_size();
+
+http_parser_url * alloc_http_parser_url() {
+    return cast(http_parser_url*)malloc(http_parser_url_size());
+}
+
+void free_http_parser_url(http_parser_url * u) {
+    if(u !is null) {
+        free(cast(void*)u);
+    }
+}
+
+struct http_parser_url_field {
+    uint16_t off;
+    uint16_t len;
+};
+
+http_parser_url_field http_parser_get_field(http_parser_url * url, http_parser_url_fields field);
+
+uint16_t http_parser_get_port(http_parser_url * url);
+uint16_t http_parser_get_fieldset(http_parser_url * url);
+
+string http_parser_get_field_string(http_parser_url * url, string rawUri,  http_parser_url_fields field) {
+    auto fieldset = http_parser_get_fieldset(url);
+    auto f = http_parser_get_field(url, field);
+    auto ifs = fieldset & (1 << field);
+    string data = null;
+    if(ifs != 0) {
+        data = rawUri[f.off..(f.off + f.len)];
+    }
+    return data;
+}
