@@ -101,8 +101,33 @@ public class HttpParserException : Exception {
   }
 }
 
+public struct HttpBodyChunk {
+    private:
+        ubyte[] _buffer;
+        bool _isFinal;
+
+    public:
+        this(ubyte[] buffer, bool isFinal) 
+        {
+            _buffer = buffer;
+            _isFinal = isFinal;
+        }
+
+        @property {
+
+            bool isFinal() pure nothrow {
+                return _isFinal;
+            }
+
+            ubyte[] buffer() pure nothrow {
+                return _buffer;
+            }
+
+        }
+}
+
 public alias void delegate(HttpParser) HttpParserDelegate;
-public alias void delegate(HttpParser, ubyte[] data, bool isFinalChunk) HttpParserDataDelegate;
+public alias void delegate(HttpParser, HttpBodyChunk) HttpParserBodyChunkDelegate;
 public alias void delegate(HttpParser, string data) HttpParserStringDelegate;
 public alias void delegate(HttpParser, HttpHeader header) HttpParserHeaderDelegate;
 
@@ -126,7 +151,7 @@ public class HttpParser {
 
     // delegates
     HttpParserDelegate _messageBegin, _messageComplete, _headersComplete;
-    HttpParserDataDelegate _onBody;
+    HttpParserBodyChunkDelegate _onBody;
     HttpParserStringDelegate _onUrl, _statusComplete;
     HttpParserHeaderDelegate _onHeader;
     Throwable _lastException;
@@ -234,10 +259,10 @@ public class HttpParser {
       _headersComplete = callback;
     }
 
-    @property HttpParserDataDelegate onBody() {
+    @property HttpParserBodyChunkDelegate onBody() {
       return _onBody;
     }
-    @property void onBody(HttpParserDataDelegate callback) {
+    @property void onBody(HttpParserBodyChunkDelegate callback) {
       _onBody = callback;
     }
 
@@ -364,7 +389,8 @@ public class HttpParser {
       if(this._onBody) {
         try {
             bool isFinal = http_body_is_final(_parser) != 0;
-          _onBody(this, data, isFinal);
+            auto chunk = HttpBodyChunk(data, isFinal);
+          _onBody(this, chunk);
         } catch(Throwable ex) {
           _lastException = ex;
           return CB_ERR;

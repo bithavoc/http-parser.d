@@ -53,7 +53,7 @@ unittest {
         runTest("onBody", {
           Exception lastException;
           auto parser = new HttpParser();
-          parser.onBody = (parser, ubyte[] data, bool isFinalChunk) {
+          parser.onBody = (parser, chunk) {
             throw new Exception(customErrorMessage);
           };
           try {
@@ -239,13 +239,10 @@ unittest {
       scopeTest("HTTP Body", {
         runTest("onBody isFinal", {
           auto parser = new HttpParser();
-          Tuple!(ubyte[], bool)[] readings;
+          HttpBodyChunk[] readings;
           Throwable lastException;
-          parser.onBody = (parser, ubyte[] data, bool isFinalChunk) {
-            Tuple!(ubyte[], bool) entry;
-            entry[0] = data;
-            entry[1] = isFinalChunk;
-            readings ~= entry;
+          parser.onBody = (parser, HttpBodyChunk chunk) {
+            readings ~= chunk;
           };
           try {
             parser.execute(cast(ubyte[])"POST / HTTP/1.1\r\nContent-Length: 6\r\n\r\naaa");
@@ -254,10 +251,10 @@ unittest {
             lastException = ex;
           }
           assert(lastException is null, "Something happened while executing a body post");
-          assert(readings[0][0] == [97, 97, 97], "first chunk should read  aaa");
-          assert(readings[0][1] == false, "first chunk should not be final");
-          assert(readings[1][0] == [98, 98, 98], "second chunk should read  aaa");
-          assert(readings[1][1] == true, "second chunk should be final");
+          assert(readings[0].buffer == [97, 97, 97], "first chunk should read  aaa");
+          assert(!readings[0].isFinal, "first chunk should not be final");
+          assert(readings[1].buffer == [98, 98, 98], "second chunk should read  aaa");
+          assert(readings[1].isFinal, "second chunk should be final");
         });
       });
     }); //HttpParser

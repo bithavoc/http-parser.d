@@ -30,8 +30,9 @@ http-parser.D = [joyent/http-parser](https://github.com/joyent/http-parser/) in 
 	parser.onHeader = (parser, HttpHeader header) {
 		writeln("Parser Header '", header.name, "' with value '", header.value, "'");
 	};
-	parser.onBody = (parser, ubyte[] data, bool isFinalChunk) {
-		writeln("A chunk of the HTTP bady has been processed: ", data);
+	parser.onBody = (parser, HttpBodyChunk chunk) {
+        string isFinal = chunk.isFinal ? "final" : "not final" ;
+		writeln(std.string.format("A chunk of the HTTP body has been processed: %s (%s) ", chunk.buffer, isFinal));
 	};
 	parser.execute("GET / HTTP 1.1\r");
 	parser.execute("\n");
@@ -49,7 +50,7 @@ Output:
 	Url of HTTP message is: /
 	Parser Header 'FirstHeader' with value 'ValueOfFirst Header'
 	Parser Header 'Content-Length' with value '3'
-	A chunk of the HTTP bady has been processed: [1, 2, 3]
+	A chunk of the HTTP bady has been processed: [1, 2, 3] (is final)
 	Message has been completed
 
 ## Uri
