@@ -1,6 +1,7 @@
 import http.parser.core;
 import std.stdio;
 import testutil;
+import std.typecons;
 
 unittest {
   {
@@ -52,7 +53,7 @@ unittest {
         runTest("onBody", {
           Exception lastException;
           auto parser = new HttpParser();
-          parser.onBody = (parser, ubyte[] data) {
+          parser.onBody = (parser, ubyte[] data, bool isFinalChunk) {
             throw new Exception(customErrorMessage);
           };
           try {
@@ -233,6 +234,30 @@ unittest {
         runTest("URI special port", {
             Uri uri = Uri("testschema://hello.com:9000");
             assert(uri.port == 9000, "parsed port is not '9000', current is " ~ std.conv.to!string(uri.port));
+        });
+      });
+      scopeTest("HTTP Body", {
+        runTest("onBody isFinal", {
+          auto parser = new HttpParser();
+          Tuple!(ubyte[], bool)[] readings;
+          Throwable lastException;
+          parser.onBody = (parser, ubyte[] data, bool isFinalChunk) {
+            Tuple!(ubyte[], bool) entry;
+            entry[0] = data;
+            entry[1] = isFinalChunk;
+            readings ~= entry;
+          };
+          try {
+            parser.execute(cast(ubyte[])"POST / HTTP/1.1\r\nContent-Length: 6\r\n\r\naaa");
+            parser.execute(cast(ubyte[])"bbb");
+          } catch(Throwable ex) {
+            lastException = ex;
+          }
+          assert(lastException is null, "Something happened while executing a body post");
+          assert(readings[0][0] == [97, 97, 97], "first chunk should read  aaa");
+          assert(readings[0][1] == false, "first chunk should not be final");
+          assert(readings[1][0] == [98, 98, 98], "second chunk should read  aaa");
+          assert(readings[1][1] == true, "second chunk should be final");
         });
       });
     }); //HttpParser

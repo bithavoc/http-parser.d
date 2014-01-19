@@ -102,7 +102,7 @@ public class HttpParserException : Exception {
 }
 
 public alias void delegate(HttpParser) HttpParserDelegate;
-public alias void delegate(HttpParser, ubyte[] data) HttpParserDataDelegate;
+public alias void delegate(HttpParser, ubyte[] data, bool isFinalChunk) HttpParserDataDelegate;
 public alias void delegate(HttpParser, string data) HttpParserStringDelegate;
 public alias void delegate(HttpParser, HttpHeader header) HttpParserHeaderDelegate;
 
@@ -363,7 +363,8 @@ public class HttpParser {
     int _on_body(ubyte[] data) {
       if(this._onBody) {
         try {
-          _onBody(this, data);
+            bool isFinal = http_body_is_final(_parser) != 0;
+          _onBody(this, data, isFinal);
         } catch(Throwable ex) {
           _lastException = ex;
           return CB_ERR;

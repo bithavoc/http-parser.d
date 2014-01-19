@@ -121,3 +121,5 @@ string http_parser_get_field_string(http_parser_url * url, string rawUri,  http_
     }
     return data;
 }
+
+int http_body_is_final(http_parser *parser);
