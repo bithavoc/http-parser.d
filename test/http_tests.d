@@ -256,6 +256,30 @@ unittest {
           assert(readings[1].buffer == [98, 98, 98], "second chunk should read  aaa");
           assert(readings[1].isFinal, "second chunk should be final");
         });
+        runTest("onBody isFinal content length", {
+          auto parser = new HttpParser();
+          HttpBodyChunk[] readings;
+          Throwable lastException;
+          parser.onBody = (parser, HttpBodyChunk chunk) {
+            readings ~= chunk;
+          };
+          ulong contentLength = 0;
+          parser.onHeadersComplete = (parser) {
+            contentLength = parser.contentLength;
+          };
+          try {
+            parser.execute(cast(ubyte[])"POST / HTTP/1.1\r\nContent-Length: 6\r\n\r\naaa");
+            parser.execute(cast(ubyte[])"bbb");
+          } catch(Throwable ex) {
+            lastException = ex;
+          }
+          assert(lastException is null, "Something happened while executing a body post");
+          assert(readings[0].buffer == [97, 97, 97], "first chunk should read  aaa");
+          assert(!readings[0].isFinal, "first chunk should not be final");
+          assert(readings[1].buffer == [98, 98, 98], "second chunk should read  aaa");
+          assert(readings[1].isFinal, "second chunk should be final");
+          assert(contentLength == 6, "Content Length should be 6");
+        });
       });
     }); //HttpParser
   }

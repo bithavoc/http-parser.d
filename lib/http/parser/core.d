@@ -283,6 +283,10 @@ public class HttpParser {
     @property string method() {
         return std.conv.to!string(duv_http_method_str(_parser));
     }
+
+    @property ulong contentLength() {
+        return http_parser_get_content_length(_parser);
+    }
   }
 
   package {

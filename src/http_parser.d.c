@@ -91,3 +91,7 @@ uint16_t http_parser_get_port(struct http_parser_url * url) {
 uint16_t http_parser_get_fieldset(struct http_parser_url * url) {
     return url->field_set;
 }
+
+uint64_t http_parser_get_content_length(http_parser * parser) {
+    return parser->content_length;
+}
