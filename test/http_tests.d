@@ -340,6 +340,21 @@ unittest {
           assert(lastException is null, "Something happened while executing a body post");
           assert(mode == HttpBodyTransmissionMode.Chunked, "Transmission must be Chunked even if the Transfer-Encoding header is not explicitely set to 'chunked'");
         });
+        runTest("onBody HttpBodyTransmissionMode.Chunked priority", {
+          auto parser = new HttpParser();
+          Throwable lastException;
+          HttpBodyTransmissionMode mode;
+          parser.onHeadersComplete = (parser) {
+            mode = parser.transmissionMode;
+          };
+          try {
+            parser.execute(cast(ubyte[])"POST / HTTP/1.1\r\nContent-Length: 0\r\nTransfer-Encoding: chunked\r\n\r\n");
+          } catch(Throwable ex) {
+            lastException = ex;
+          }
+          assert(lastException is null, "Something happened while executing a body post");
+          assert(mode == HttpBodyTransmissionMode.Chunked, "Transmission must be Chunked even if Content-Length is present since chunked has higher priority than Content-Length");
+        });
       });
     }); //HttpParser
   }
