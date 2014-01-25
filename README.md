@@ -73,6 +73,14 @@ string fragment = uri.fragment; // -> "page_2"
 
 ```
 
+## Body Transmission Modes
+
+Once the headers were parsed, `HttpParser.transmissionMode` can be used to determinate how the body of the message will be transmitted. The values are and will be detected in the following order:
+
+* HttpBodyTransmissionMode.Chunked: `Transfer-Encoding` header was found in the request.
+* HttpBodyTransmissionMode.ContentLength: `Content-Length` > 0 header was found in the request.
+* HttpBodyTransmissionModel.None: No entity expected in the incoming HTTP message.
+
 ## Building
 
 	make

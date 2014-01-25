@@ -256,7 +256,7 @@ unittest {
           assert(readings[1].buffer == [98, 98, 98], "second chunk should read  aaa");
           assert(readings[1].isFinal, "second chunk should be final");
         });
-        runTest("onBody isFinal content length", {
+        runTest("onBody contentLength", {
           auto parser = new HttpParser();
           HttpBodyChunk[] readings;
           Throwable lastException;
@@ -279,6 +279,66 @@ unittest {
           assert(readings[1].buffer == [98, 98, 98], "second chunk should read  aaa");
           assert(readings[1].isFinal, "second chunk should be final");
           assert(contentLength == 6, "Content Length should be 6");
+        });
+        runTest("onBody HttpBodyTransmissionMode.ContentLength", {
+          auto parser = new HttpParser();
+          Throwable lastException;
+          HttpBodyTransmissionMode mode;
+          parser.onHeadersComplete = (parser) {
+            mode = parser.transmissionMode;
+          };
+          try {
+            parser.execute(cast(ubyte[])"POST / HTTP/1.1\r\nContent-Length: 10\r\n\r\n");
+          } catch(Throwable ex) {
+            lastException = ex;
+          }
+          assert(lastException is null, "Something happened while executing a body post");
+          assert(mode == HttpBodyTransmissionMode.ContentLength, "Transmission must be ContentLength");
+        });
+        runTest("onBody HttpBodyTransmissionMode.Chunked", {
+          auto parser = new HttpParser();
+          Throwable lastException;
+          HttpBodyTransmissionMode mode;
+          parser.onHeadersComplete = (parser) {
+            mode = parser.transmissionMode;
+          };
+          try {
+            parser.execute(cast(ubyte[])"POST / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n");
+          } catch(Throwable ex) {
+            lastException = ex;
+          }
+          assert(lastException is null, "Something happened while executing a body post");
+          assert(mode == HttpBodyTransmissionMode.Chunked, "Transmission must be Chunked");
+        });
+        runTest("onBody HttpBodyTransmissionMode.Chunked case insensitivity", {
+          auto parser = new HttpParser();
+          Throwable lastException;
+          HttpBodyTransmissionMode mode;
+          parser.onHeadersComplete = (parser) {
+            mode = parser.transmissionMode;
+          };
+          try {
+            parser.execute(cast(ubyte[])"POST / HTTP/1.1\r\nTransfer-ENCOding: chunked\r\n\r\n");
+          } catch(Throwable ex) {
+            lastException = ex;
+          }
+          assert(lastException is null, "Something happened while executing a body post");
+          assert(mode == HttpBodyTransmissionMode.Chunked, "Transmission must be Chunked");
+        });
+        runTest("onBody HttpBodyTransmissionMode.Chunked inference by presence of Header", {
+          auto parser = new HttpParser();
+          Throwable lastException;
+          HttpBodyTransmissionMode mode;
+          parser.onHeadersComplete = (parser) {
+            mode = parser.transmissionMode;
+          };
+          try {
+            parser.execute(cast(ubyte[])"POST / HTTP/1.1\r\nTransfer-ENCOding: somethingElse\r\n\r\n");
+          } catch(Throwable ex) {
+            lastException = ex;
+          }
+          assert(lastException is null, "Something happened while executing a body post");
+          assert(mode == HttpBodyTransmissionMode.Chunked, "Transmission must be Chunked even if the Transfer-Encoding header is not explicitely set to 'chunked'");
         });
       });
     }); //HttpParser

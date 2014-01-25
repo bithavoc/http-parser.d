@@ -24,13 +24,19 @@ module http.parser.core;
 import http.parser.c;
 import std.stdio;
 import std.conv;
-import std.string : toStringz;
+import std.string : toStringz, CaseSensitive, indexOf;
 import std.stdint : uint16_t;
 
 enum HttpParserType {
   REQUEST,
   RESPONSE,
   BOTH
+};
+
+enum HttpBodyTransmissionMode {
+    None,
+    ContentLength,
+    Chunked
 };
 
 public struct HttpVersion {
@@ -155,6 +161,8 @@ public class HttpParser {
     HttpParserStringDelegate _onUrl, _statusComplete;
     HttpParserHeaderDelegate _onHeader;
     Throwable _lastException;
+    HttpBodyTransmissionMode _transmissionMode;
+    bool _transferEncodingPresent = false;
 
     const int CB_OK = 0;
     const int CB_ERR = 1;
@@ -167,6 +175,7 @@ public class HttpParser {
     HttpHeader _currentHeader;
 
     void _resetCounters() {
+      _transferEncodingPresent = false;
       _headerFields = 0;
       _headerValues = 0;
       _resetCurrentHeader();
@@ -287,6 +296,9 @@ public class HttpParser {
     @property ulong contentLength() {
         return http_parser_get_content_length(_parser);
     }
+    @property HttpBodyTransmissionMode transmissionMode() {
+        return _transmissionMode;
+    }
   }
 
   package {
@@ -370,15 +382,34 @@ public class HttpParser {
     }
     void _publishHeader() {
       if(_currentHeader.isEmpty) return;
-
+      if(_currentHeader.name.indexOf("Transfer-Encoding", CaseSensitive.no) != -1) {
+        _transferEncodingPresent = true;
+      }
       if(this._onHeader) {
         this._onHeader(this, _currentHeader);
       }
     }
 
+    void _determinateTransmissionMode() {
+        // Follow the order in the RFC http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.4
+
+        // use transfer encoding if present
+        if(_transferEncodingPresent) {
+            _transmissionMode = HttpBodyTransmissionMode.Chunked;
+        }
+        // otherwise check if there is contentLength (ContentLength: 0 must be interpreted as non-existent)
+        else if(this.contentLength > 0) {
+            _transmissionMode = HttpBodyTransmissionMode.ContentLength;
+        } else {
+            // No HTTP Entity Body
+            _transmissionMode = HttpBodyTransmissionMode.None;
+        }
+    }
+
     int _on_headers_complete() {
       try {
         _publishHeader();
+        _determinateTransmissionMode();
         if(this._headersComplete) {
           _headersComplete(this);
         }
