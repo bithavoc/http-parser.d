@@ -39,6 +39,10 @@ enum HttpBodyTransmissionMode {
     Chunked
 };
 
+@property bool shouldRead(HttpBodyTransmissionMode mode) pure nothrow {
+    return mode > HttpBodyTransmissionMode.None;
+}
+
 public struct HttpVersion {
     private:
         ushort _minor;

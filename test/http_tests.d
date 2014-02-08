@@ -356,6 +356,17 @@ unittest {
           assert(mode == HttpBodyTransmissionMode.Chunked, "Transmission must be Chunked even if Content-Length is present since chunked has higher priority than Content-Length");
         });
       });
+      scopeTest("Transmission Mode should read Body?", {
+        runTest("None Transmission means No Body to Process", {
+          assert(!HttpBodyTransmissionMode.None.shouldRead, "None means no body");
+        });
+        runTest("Chunked Transmission means there is a Body to Process", {
+          assert(HttpBodyTransmissionMode.Chunked.shouldRead, "Chunked must read body");
+        });
+        runTest("ContentLength Transmission means there is a Body to Process", {
+          assert(HttpBodyTransmissionMode.ContentLength.shouldRead, "ContentLength must read body");
+        });
+      });
     }); //HttpParser
   }
 }
