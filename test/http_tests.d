@@ -2,6 +2,7 @@ import http.parser.core;
 import std.stdio;
 import testutil;
 import std.typecons;
+import std.string : format;
 
 unittest {
   {
@@ -234,6 +235,23 @@ unittest {
         runTest("URI special port", {
             Uri uri = Uri("testschema://hello.com:9000");
             assert(uri.port == 9000, "parsed port is not '9000', current is " ~ std.conv.to!string(uri.port));
+        });
+        runTest("toString", {
+            string[] list = [
+                "ftp://ftp.example.com",
+                "ftp://johan:secret@ftp.example.com/",
+                "ftp://johan:secret@ftp.example.com:8088/",
+                "ftp://johan:secret@ftp.example.com:8088/?hello"
+                "ftp://johan:secret@ftp.example.com:8088/somepath?hello"
+                "ftp://johan:secret@ftp.example.com:8088/somepath/sub?hello"
+            ];
+            foreach(originalUri; list) {
+                auto uri = Uri(originalUri);
+                string str = uri.toString;
+                string auri = uri.absoluteUri;
+                assert(str == originalUri, "toString '%s' is not the same as original uri '%s'".format(str, originalUri));
+                assert(str == auri, "toString '%s' is not the same as absolute uri '%s'".format(str, auri));
+            }
         });
       });
       scopeTest("HTTP Body", {

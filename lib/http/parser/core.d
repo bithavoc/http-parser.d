@@ -451,6 +451,14 @@ struct Uri {
     private:
         string _schema, _host, _path, _query, _fragment, _userInfo;
         ushort _port;
+        string _absoluteUri;
+
+        void buildAbsoluteUri() {
+            string absolutePort = _port == 0 ? "" : ":" ~ _port.to!string;
+            string absoluteQuery = _query.length == 0 ? "" : "?" ~ _query;
+            string absoluteUserInfo = _userInfo.length == 0 ? "" :  _userInfo ~ "@";
+            _absoluteUri = this.schema ~ "://" ~ absoluteUserInfo ~ _host ~ absolutePort ~ _path ~ absoluteQuery;
+        }
 
     public:
         this(in string rawUri, bool isConnect = false) {
@@ -459,7 +467,7 @@ struct Uri {
             immutable(char) * buff = rawUri.toStringz;
             int res = http_parser_parse_url(buff, rawUri.length, isConnect ? 1 : 0, url);
             if(res != 0) {
-                throw new Exception("Failed to parse rawUri");
+                throw new Exception("Failed to parse rawUri " ~ rawUri);
             }
 
             auto port = http_parser_get_port(url);
@@ -481,6 +489,7 @@ struct Uri {
             _query = query;
             _fragment = fragment;
             _userInfo = userInfo;
+            this.buildAbsoluteUri();
         }
 
     @property {
@@ -512,5 +521,11 @@ struct Uri {
         string userInfo() pure nothrow {
             return _userInfo;
         }
+        string absoluteUri() pure nothrow {
+            return _absoluteUri;
+        }
+    }
+    string toString() {
+        return this.absoluteUri;
     }
 }
