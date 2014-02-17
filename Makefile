@@ -32,7 +32,7 @@ examples: http-parser.d examples/*
 
 deps/http-parser/http_parser.o:
 	@echo "Compiling deps/http-parser"
-	git submodule update --init  --remote deps/http-parser
+	git submodule update --init deps/http-parser
 	mkdir -p out/di
 	(cd deps/http-parser; $(MAKE) $(HTTP_PARSER_LIB_BUILD))
 	cp deps/http-parser/http_parser.o out/http-parser.o
