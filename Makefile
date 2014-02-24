@@ -1,6 +1,7 @@
 OS_NAME=$(shell uname -s)
 MH_NAME=$(shell uname -m)
-DFLAGS=-gc -gs -g
+DFLAGS=
+OS_TYPE=linux
 ifeq (${OS_NAME},Darwin)
 	DFLAGS+=-L-framework -LCoreServices 
 endif
@@ -10,6 +11,9 @@ ifeq (${DEBUG}, 1)
 else
 	DFLAGS=-O -release -inline -noboundscheck
 	HTTP_PARSER_LIB_BUILD=package
+endif
+ifeq (${OS_NAME},Darwin)
+	OS_TYPE=osx
 endif
 DC=dmd
 
@@ -49,6 +53,11 @@ http-parser.d.lib: lib/http/parser/*.d http-parser.d.c
 http-parser.d: http-parser.d.lib
 		rm -f out/http-parser.a
 		ar -r out/http-parser.a out/http-parser.o out/http-parser.d.c.o out/http-parser.d.lib.o
+
+dub: http-parser.d
+	mkdir -p dub/bin
+	cp out/http-parser.d.c.o dub/bin/http-parser-$(OS_TYPE)-$(MH_NAME).d.c.o
+	cp out/http-parser.o dub/bin/http-parser-$(OS_TYPE)-$(MH_NAME).o
 
 .PHONY: clean
 
