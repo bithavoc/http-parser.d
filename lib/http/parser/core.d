@@ -168,8 +168,8 @@ public class HttpParser {
     HttpBodyTransmissionMode _transmissionMode;
     bool _transferEncodingPresent = false;
 
-    const int CB_OK = 0;
-    const int CB_ERR = 1;
+    __gshared const int CB_OK = 0;
+    __gshared const int CB_ERR = 1;
 
     /** Begin Counters
       Countes are reset every time a new message is received. Check _resetCounters.
