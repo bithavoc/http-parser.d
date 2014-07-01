@@ -96,6 +96,16 @@ unittest {
           assert(lastException.msg == customErrorMessage, "Exception raised doesn't have the given exception");
           assert(st == "OK");
         });
+        runTest("Response statusCode", {
+          auto parser = new HttpParser(HttpParserType.RESPONSE);
+          parser.execute(cast(ubyte[])"HTTP/1.1 404 OK\r\n");
+          assert(parser.statusCode == 404);
+        });
+        runTest("Request statusCode", {
+          auto parser = new HttpParser(HttpParserType.REQUEST);
+          parser.execute(cast(ubyte[])"GET / HTTP/1.1\r\n\r\n");
+          assert(parser.statusCode == 0);
+        });
         runTest("onStatusComplete Request", {
           Exception lastException;
           auto parser = new HttpParser(HttpParserType.REQUEST);

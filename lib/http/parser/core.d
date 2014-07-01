@@ -176,6 +176,7 @@ public class HttpParser {
       */
     int _headerFields;
     int _headerValues;
+    uint _statusCode;
     HttpHeader _currentHeader;
 
     void _resetCounters() {
@@ -303,6 +304,13 @@ public class HttpParser {
     @property HttpBodyTransmissionMode transmissionMode() {
         return _transmissionMode;
     }
+
+    /*
+       Available on statusComplete
+     */
+    @property uint statusCode() {
+        return _statusCode;
+    }
   }
 
   package {
@@ -333,6 +341,9 @@ public class HttpParser {
 
 
     int _on_status_complete(ubyte[] data) {
+      if(_type == HttpParserType.RESPONSE) {
+        _statusCode = duv_http_status_code(_parser);
+      }
       if(this._statusComplete) {
         try {
           _statusComplete(this, cast(string)data);
