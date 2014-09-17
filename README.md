@@ -20,12 +20,19 @@ http-parser.D = [joyent/http-parser](https://github.com/joyent/http-parser/) in 
 	};
 	parser.onStatusComplete = (parser) {
 		writeln("HTTP status is complete");
+        // if parsing request, this is a good spot to query for:
+        if(parser.type == HttpParserType.REQUEST) {
+            string method = parser.method; // GET
+            writeln("Method: ", method);
+        }
+        auto version = parser.protocolVersion.toString; // 1.1
 	};
 	parser.onHeader = (parser, HttpHeader header) {
 		writeln("Parser Header '", header.name, "' with value '", header.value, "'");
 	};
-	parser.onBody = (parser, ubyte[] data) {
-		writeln("A chunk of the HTTP bady has been processed: ", data);
+	parser.onBody = (parser, HttpBodyChunk chunk) {
+        string isFinal = chunk.isFinal ? "final" : "not final" ;
+		writeln(std.string.format("A chunk of the HTTP body has been processed: %s (%s) ", chunk.buffer, isFinal));
 	};
 	parser.execute("GET / HTTP 1.1\r");
 	parser.execute("\n");
@@ -37,13 +44,42 @@ http-parser.D = [joyent/http-parser](https://github.com/joyent/http-parser/) in 
 
 
 Output:
+
+
 	Message has just begun
 	Url of HTTP message is: /
 	Parser Header 'FirstHeader' with value 'ValueOfFirst Header'
 	Parser Header 'Content-Length' with value '3'
-	A chunk of the HTTP bady has been processed: [1, 2, 3]
+	A chunk of the HTTP bady has been processed: [1, 2, 3] (is final)
 	Message has been completed
 
+## Uri
+
+Uri parsing is provided by the class `http.parser.Uri`.
+
+```D
+import http.parser : Uri;
+
+//...
+
+Uri uri = new Uri("http://user1:password1@google.com:9000/myResource?indent=1#page_2");
+string schema = uri.schema; // -> "http"
+string credentials = uri.userInfo; // -> "user1:password1"
+string host = uri.host; // -> "google.com"
+ushort port = uri.port; // -> 9000
+string path = uri.path; // -> "/myResource"
+string query = uri.query; // -> "ident=1"
+string fragment = uri.fragment; // -> "page_2"
+
+```
+
+## Body Transmission Modes
+
+Once the headers were parsed, `HttpParser.transmissionMode` can be used to determinate how the body of the message will be transmitted. The values are and will be detected in the following order:
+
+* HttpBodyTransmissionMode.Chunked: `Transfer-Encoding` header was found in the request.
+* HttpBodyTransmissionMode.ContentLength: `Content-Length` > 0 header was found in the request.
+* HttpBodyTransmissionModel.None: No entity expected in the incoming HTTP message.
 
 ## Building
 
@@ -66,7 +102,7 @@ Use `make examples` to compile all the examples. Executables will be generated i
 
 ## License (MIT)
 
-Copyright (c) 2012, 2014 bithavoc.com - http://bithavoc.com
+Copyright (c) 2012, 2014 Bithavoc - http://bithavoc.io
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 

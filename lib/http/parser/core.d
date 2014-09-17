@@ -24,6 +24,8 @@ module http.parser.core;
 import http.parser.c;
 import std.stdio;
 import std.conv;
+import std.string : toStringz, CaseSensitive, indexOf;
+import std.stdint : uint16_t;
 
 enum HttpParserType {
   REQUEST,
@@ -31,6 +33,41 @@ enum HttpParserType {
   BOTH
 };
 
+enum HttpBodyTransmissionMode {
+    None,
+    ContentLength,
+    Chunked
+};
+
+@property bool shouldRead(HttpBodyTransmissionMode mode) pure nothrow {
+    return mode > HttpBodyTransmissionMode.None;
+}
+
+public struct HttpVersion {
+    private:
+        ushort _minor;
+        ushort _major;
+        string _str;
+    public:
+        this(ushort major, ushort minor) {
+            _major = major;
+            _minor = minor;
+            _str = std.string.format("%d.%d", _major, _minor);
+        }
+
+        @property {
+            ushort major() pure nothrow {
+                return _major;
+            }
+            ushort minor() pure nothrow {
+                return _minor;
+            }
+        }
+
+        string toString() {
+            return _str;
+        }
+}
 public struct HttpHeader {
   package string _name, _value;
 
@@ -74,8 +111,33 @@ public class HttpParserException : Exception {
   }
 }
 
+public struct HttpBodyChunk {
+    private:
+        ubyte[] _buffer;
+        bool _isFinal;
+
+    public:
+        this(ubyte[] buffer, bool isFinal) 
+        {
+            _buffer = buffer;
+            _isFinal = isFinal;
+        }
+
+        @property {
+
+            bool isFinal() pure nothrow {
+                return _isFinal;
+            }
+
+            ubyte[] buffer() pure nothrow {
+                return _buffer;
+            }
+
+        }
+}
+
 public alias void delegate(HttpParser) HttpParserDelegate;
-public alias void delegate(HttpParser, ubyte[] data) HttpParserDataDelegate;
+public alias void delegate(HttpParser, HttpBodyChunk) HttpParserBodyChunkDelegate;
 public alias void delegate(HttpParser, string data) HttpParserStringDelegate;
 public alias void delegate(HttpParser, HttpHeader header) HttpParserHeaderDelegate;
 
@@ -85,7 +147,7 @@ public class HttpParser {
     extern(C) {
       mixin(http_parser_cb!("on_message_begin"));
       mixin(http_parser_data_cb!("on_url"));
-      mixin(http_parser_cb!("on_status_complete"));
+      mixin(http_parser_data_cb!("on_status_complete"));
       mixin(http_parser_data_cb!("on_header_value"));
       mixin(http_parser_data_cb!("on_header_field"));
       mixin(http_parser_cb!("on_headers_complete"));
@@ -98,23 +160,27 @@ public class HttpParser {
     HttpParserType _type;
 
     // delegates
-    HttpParserDelegate _messageBegin, _messageComplete, _headersComplete, _statusComplete;
-    HttpParserDataDelegate _onBody;
-    HttpParserStringDelegate _onUrl;
+    HttpParserDelegate _messageBegin, _messageComplete, _headersComplete;
+    HttpParserBodyChunkDelegate _onBody;
+    HttpParserStringDelegate _onUrl, _statusComplete;
     HttpParserHeaderDelegate _onHeader;
     Throwable _lastException;
+    HttpBodyTransmissionMode _transmissionMode;
+    bool _transferEncodingPresent = false;
 
-    const int CB_OK = 0;
-    const int CB_ERR = 1;
+    __gshared const int CB_OK = 0;
+    __gshared const int CB_ERR = 1;
 
     /** Begin Counters
       Countes are reset every time a new message is received. Check _resetCounters.
       */
     int _headerFields;
     int _headerValues;
+    uint _statusCode;
     HttpHeader _currentHeader;
 
     void _resetCounters() {
+      _transferEncodingPresent = false;
       _headerFields = 0;
       _headerValues = 0;
       _resetCurrentHeader();
@@ -171,6 +237,10 @@ public class HttpParser {
       return ret;
     }
 
+    @property HttpVersion protocolVersion() {
+        return HttpVersion(duv_http_major(_parser), duv_http_minor(_parser));
+    }
+
     @property HttpParserType type() {
       return _type;
     }
@@ -189,10 +259,10 @@ public class HttpParser {
       _messageComplete = callback;
     }
 
-    @property HttpParserDelegate onStatusComplete() {
+    @property HttpParserStringDelegate onStatusComplete() {
       return _statusComplete;
     }
-    @property void onStatusComplete(HttpParserDelegate callback) {
+    @property void onStatusComplete(HttpParserStringDelegate callback) {
       _statusComplete = callback;
     }
 
@@ -203,10 +273,10 @@ public class HttpParser {
       _headersComplete = callback;
     }
 
-    @property HttpParserDataDelegate onBody() {
+    @property HttpParserBodyChunkDelegate onBody() {
       return _onBody;
     }
-    @property void onBody(HttpParserDataDelegate callback) {
+    @property void onBody(HttpParserBodyChunkDelegate callback) {
       _onBody = callback;
     }
 
@@ -222,6 +292,24 @@ public class HttpParser {
     }
     @property void onHeader(HttpParserHeaderDelegate callback) {
       _onHeader = callback;
+    }
+
+    @property string method() {
+        return std.conv.to!string(duv_http_method_str(_parser));
+    }
+
+    @property ulong contentLength() {
+        return http_parser_get_content_length(_parser);
+    }
+    @property HttpBodyTransmissionMode transmissionMode() {
+        return _transmissionMode;
+    }
+
+    /*
+       Available on statusComplete
+     */
+    @property uint statusCode() {
+        return _statusCode;
     }
   }
 
@@ -251,10 +339,14 @@ public class HttpParser {
       return CB_OK;
     }
 
-    int _on_status_complete() {
+
+    int _on_status_complete(ubyte[] data) {
+      if(_type == HttpParserType.RESPONSE) {
+        _statusCode = duv_http_status_code(_parser);
+      }
       if(this._statusComplete) {
         try {
-          _statusComplete(this);
+          _statusComplete(this, cast(string)data);
         } catch(Throwable ex) {
           _lastException = ex;
           return CB_ERR;
@@ -305,15 +397,34 @@ public class HttpParser {
     }
     void _publishHeader() {
       if(_currentHeader.isEmpty) return;
-
+      if(_currentHeader.name.indexOf("Transfer-Encoding", CaseSensitive.no) != -1) {
+        _transferEncodingPresent = true;
+      }
       if(this._onHeader) {
         this._onHeader(this, _currentHeader);
       }
     }
 
+    void _determinateTransmissionMode() {
+        // Follow the order in the RFC http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.4
+
+        // use transfer encoding if present
+        if(_transferEncodingPresent) {
+            _transmissionMode = HttpBodyTransmissionMode.Chunked;
+        }
+        // otherwise check if there is contentLength (ContentLength: 0 must be interpreted as non-existent)
+        else if(this.contentLength > 0) {
+            _transmissionMode = HttpBodyTransmissionMode.ContentLength;
+        } else {
+            // No HTTP Entity Body
+            _transmissionMode = HttpBodyTransmissionMode.None;
+        }
+    }
+
     int _on_headers_complete() {
       try {
         _publishHeader();
+        _determinateTransmissionMode();
         if(this._headersComplete) {
           _headersComplete(this);
         }
@@ -327,7 +438,9 @@ public class HttpParser {
     int _on_body(ubyte[] data) {
       if(this._onBody) {
         try {
-          _onBody(this, data);
+            bool isFinal = http_body_is_final(_parser) != 0;
+            auto chunk = HttpBodyChunk(data, isFinal);
+          _onBody(this, chunk);
         } catch(Throwable ex) {
           _lastException = ex;
           return CB_ERR;
@@ -343,4 +456,87 @@ public class HttpParser {
       _parser = null;
     }
   }
+}
+
+struct Uri {
+    private:
+        string _schema, _host, _path, _query, _fragment, _userInfo;
+        ushort _port;
+        string _absoluteUri;
+
+        void buildAbsoluteUri() {
+            string absolutePort = _port == 0 ? "" : ":" ~ _port.to!string;
+            string absoluteQuery = _query.length == 0 ? "" : "?" ~ _query;
+            string absoluteUserInfo = _userInfo.length == 0 ? "" :  _userInfo ~ "@";
+            _absoluteUri = this.schema ~ "://" ~ absoluteUserInfo ~ _host ~ absolutePort ~ _path ~ absoluteQuery;
+        }
+
+    public:
+        this(in string rawUri, bool isConnect = false) {
+            http_parser_url * url = alloc_http_parser_url();
+            scope (exit) free_http_parser_url(url);
+            immutable(char) * buff = rawUri.toStringz;
+            int res = http_parser_parse_url(buff, rawUri.length, isConnect ? 1 : 0, url);
+            if(res != 0) {
+                throw new Exception("Failed to parse rawUri " ~ rawUri);
+            }
+
+            auto port = http_parser_get_port(url);
+            auto schema = http_parser_get_field_string(url, rawUri, http_parser_url_fields.UF_SCHEMA);
+            auto host = http_parser_get_field_string(url, rawUri, http_parser_url_fields.UF_HOST);
+            auto path = http_parser_get_field_string(url, rawUri, http_parser_url_fields.UF_PATH);
+            auto query = http_parser_get_field_string(url, rawUri, http_parser_url_fields.UF_QUERY);
+            auto fragment = http_parser_get_field_string(url, rawUri, http_parser_url_fields.UF_FRAGMENT);
+            auto userInfo = http_parser_get_field_string(url, rawUri, http_parser_url_fields.UF_USERINFO);
+
+            this(schema, host, port, path, query, fragment, userInfo);
+        }
+
+        this(in string schema, in string host, in ushort port, in string path, in string query, in string fragment, in string userInfo) {
+            _schema = schema;
+            _host = host;
+            _port = port;
+            _path = path;
+            _query = query;
+            _fragment = fragment;
+            _userInfo = userInfo;
+            this.buildAbsoluteUri();
+        }
+
+    @property {
+
+        string schema() pure nothrow {
+            return _schema;
+        }
+
+        string host() pure nothrow {
+            return _host;
+        }
+
+        ushort port() pure nothrow {
+            return _port;
+        }
+
+        string path() pure nothrow {
+            return _path;
+        }
+
+        string query() pure nothrow {
+            return _query;
+        }
+
+        string fragment() pure nothrow {
+            return _fragment;
+        }
+
+        string userInfo() pure nothrow {
+            return _userInfo;
+        }
+        string absoluteUri() pure nothrow {
+            return _absoluteUri;
+        }
+    }
+    string toString() {
+        return this.absoluteUri;
+    }
 }

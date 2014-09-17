@@ -25,7 +25,7 @@
 #include "http_parser.h"
 
 http_parser * duv_alloc_http_parser() {
-  return malloc(sizeof(http_parser));
+  return calloc(1, sizeof(http_parser));
 }
 
 void duv_free_http_parser(http_parser * parser) {
@@ -52,4 +52,46 @@ void duv_set_http_parser_data(http_parser * parser, void* data) {
 
 unsigned char duv_http_parser_get_errno(http_parser * parser) {
   return parser->http_errno;
+}
+
+const char * duv_http_method_str(http_parser * parser) {
+    return http_method_str(parser->method);
+}
+
+unsigned short duv_http_major(http_parser * parser) {
+    return parser->http_major;
+}
+unsigned short duv_http_minor(http_parser * parser) {
+    return parser->http_minor;
+}
+unsigned int duv_http_status_code(http_parser * parser) {
+    return parser->status_code;
+}
+
+size_t http_parser_url_size() {
+    return sizeof(struct http_parser_url);
+}
+
+typedef struct {
+    uint16_t off;
+    uint16_t len;
+} http_parser_url_field;
+
+http_parser_url_field http_parser_get_field(struct http_parser_url * url, int field) {
+    http_parser_url_field f;
+    f.off = url->field_data[field].off;
+    f.len = url->field_data[field].len;
+    return f;
+}
+
+uint16_t http_parser_get_port(struct http_parser_url * url) {
+    return url->port;
+}
+
+uint16_t http_parser_get_fieldset(struct http_parser_url * url) {
+    return url->field_set;
+}
+
+uint64_t http_parser_get_content_length(http_parser * parser) {
+    return parser->content_length;
 }
