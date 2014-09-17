@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>Http-parser.d by bithavoc</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>Http-parser.d</h1>
+        <h2>joyent/http-parser in D</h2>
+        <a href="https://github.com/bithavoc/http-parser.d" class="button"><small>View project on</small>GitHub</a>
+      </div>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h1>
+<a name="http-parserd" class="anchor" href="#http-parserd"><span class="octicon octicon-link"></span></a>http-parser.D</h1>
+
+<p>http-parser.D = <a href="https://github.com/joyent/http-parser/">joyent/http-parser</a> in D programming language.</p>
+
+<h2>
+<a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<pre><code>import std.stdio;
+import http.parser.core;
+...
+auto parser = new HttpParser();
+parser.onMessageBegin = (parser) {
+    writeln("Message has just begun");
+};
+parser.onMessageComplete = (parser) {
+    writeln("Message has been completed");
+};
+parser.onUrl = (parser, string data) {
+    writeln("Url of HTTP message is: ", data);
+};
+parser.onStatusComplete = (parser) {
+    writeln("HTTP status is complete");
+    // if parsing request, this is a good spot to query for:
+    if(parser.type == HttpParserType.REQUEST) {
+        string method = parser.method; // GET
+        writeln("Method: ", method);
+    }
+    auto version = parser.protocolVersion.toString; // 1.1
+};
+parser.onHeader = (parser, HttpHeader header) {
+    writeln("Parser Header '", header.name, "' with value '", header.value, "'");
+};
+parser.onBody = (parser, HttpBodyChunk chunk) {
+    string isFinal = chunk.isFinal ? "final" : "not final" ;
+    writeln(std.string.format("A chunk of the HTTP body has been processed: %s (%s) ", chunk.buffer, isFinal));
+};
+parser.execute("GET / HTTP 1.1\r");
+parser.execute("\n");
+parser.execute("FirstHeader: ValueOfFirst Header\r\n");
+parser.execute("Content-Length: 3\r\n");
+parser.execute("\r\n");
+ubyte[] bodyChunk = [1u,2u,3u];
+parser.execute(bodyChunk);
+</code></pre>
+
+<p>Output:</p>
+
+<pre><code>Message has just begun
+Url of HTTP message is: /
+Parser Header 'FirstHeader' with value 'ValueOfFirst Header'
+Parser Header 'Content-Length' with value '3'
+A chunk of the HTTP bady has been processed: [1, 2, 3] (is final)
+Message has been completed
+</code></pre>
+
+<h2>
+<a name="uri" class="anchor" href="#uri"><span class="octicon octicon-link"></span></a>Uri</h2>
+
+<p>Uri parsing is provided by the class <code>http.parser.Uri</code>.</p>
+
+<div class="highlight highlight-D"><pre><span class="k">import</span> <span class="n">http</span><span class="p">.</span><span class="n">parser</span> <span class="p">:</span> <span class="n">Uri</span><span class="p">;</span>
+
+<span class="c1">//...</span>
+
+<span class="n">Uri</span> <span class="n">uri</span> <span class="p">=</span> <span class="k">new</span> <span class="n">Uri</span><span class="p">(</span><span class="s">"http://user1:password1@google.com:9000/myResource?indent=1#page_2"</span><span class="p">);</span>
+<span class="nb">string</span> <span class="n">schema</span> <span class="p">=</span> <span class="n">uri</span><span class="p">.</span><span class="n">schema</span><span class="p">;</span> <span class="c1">// -&gt; "http"</span>
+<span class="nb">string</span> <span class="n">credentials</span> <span class="p">=</span> <span class="n">uri</span><span class="p">.</span><span class="n">userInfo</span><span class="p">;</span> <span class="c1">// -&gt; "user1:password1"</span>
+<span class="nb">string</span> <span class="n">host</span> <span class="p">=</span> <span class="n">uri</span><span class="p">.</span><span class="n">host</span><span class="p">;</span> <span class="c1">// -&gt; "google.com"</span>
+<span class="kt">ushort</span> <span class="n">port</span> <span class="p">=</span> <span class="n">uri</span><span class="p">.</span><span class="n">port</span><span class="p">;</span> <span class="c1">// -&gt; 9000</span>
+<span class="nb">string</span> <span class="n">path</span> <span class="p">=</span> <span class="n">uri</span><span class="p">.</span><span class="n">path</span><span class="p">;</span> <span class="c1">// -&gt; "/myResource"</span>
+<span class="nb">string</span> <span class="n">query</span> <span class="p">=</span> <span class="n">uri</span><span class="p">.</span><span class="n">query</span><span class="p">;</span> <span class="c1">// -&gt; "ident=1"</span>
+<span class="nb">string</span> <span class="n">fragment</span> <span class="p">=</span> <span class="n">uri</span><span class="p">.</span><span class="n">fragment</span><span class="p">;</span> <span class="c1">// -&gt; "page_2"</span>
+
+</pre></div>
+
+<h2>
+<a name="body-transmission-modes" class="anchor" href="#body-transmission-modes"><span class="octicon octicon-link"></span></a>Body Transmission Modes</h2>
+
+<p>Once the headers were parsed, <code>HttpParser.transmissionMode</code> can be used to determinate how the body of the message will be transmitted. The values are and will be detected in the following order:</p>
+
+<ul>
+<li>HttpBodyTransmissionMode.Chunked: <code>Transfer-Encoding</code> header was found in the request.</li>
+<li>HttpBodyTransmissionMode.ContentLength: <code>Content-Length</code> &gt; 0 header was found in the request.</li>
+<li>HttpBodyTransmissionModel.None: No entity expected in the incoming HTTP message.</li>
+</ul><h2>
+<a name="building" class="anchor" href="#building"><span class="octicon octicon-link"></span></a>Building</h2>
+
+<pre><code>git clone https://github.com/bithavoc/http-parser.d.git
+git submodule update --init
+make
+</code></pre>
+
+<p>An archive will be generated in <code>out/http-parser.a</code> containing joyent/http-parser objects and the http-parser.d object itself.</p>
+
+<h2>
+<a name="examples" class="anchor" href="#examples"><span class="octicon octicon-link"></span></a>Examples</h2>
+
+<p>Use <code>make examples</code> to compile all the examples. Executables will be generated in <code>out/examples</code>.</p>
+
+<h2>
+<a name="test" class="anchor" href="#test"><span class="octicon octicon-link"></span></a>Test</h2>
+
+<pre><code>make test
+</code></pre>
+
+<h2>
+<a name="license-mit" class="anchor" href="#license-mit"><span class="octicon octicon-link"></span></a>License (MIT)</h2>
+
+<p>Copyright (c) 2012, 2014 Bithavoc - <a href="http://bithavoc.io">http://bithavoc.io</a></p>
+
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:</p>
+
+<p>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</p>
+
+<p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/bithavoc/http-parser.d/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/bithavoc/http-parser.d/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/bithavoc/http-parser.d"></a> is maintained by <a href="https://github.com/bithavoc">bithavoc</a>.</p>
+
+          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
+    </div>
+
+            <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-54890957-1");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
+  </body>
+</html>
