@@ -41,8 +41,8 @@ void main() {
   parser.onHeader = (parser, HttpHeader header) {
     writeln("Parser Header '", header.name, "' with value '", header.value, "'");
   };
-  parser.onBody = (parser, ubyte[] data) {
-    writeln("A chunk of the HTTP bady has been processed: ", data);
+  parser.onBody = (parser, HttpBodyChunk data) {
+    writeln("A chunk of the HTTP body has been processed: ", data.buffer);
   };
 	parser.execute("GET / HTTP 1.1\r");
 	parser.execute("\n");
