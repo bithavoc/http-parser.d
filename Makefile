@@ -15,7 +15,7 @@ endif
 ifeq (${OS_NAME},Darwin)
 	OS_TYPE=osx
 endif
-DC=dmd
+DC?=dmd
 
 build: http-parser.d
 
