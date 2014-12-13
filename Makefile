@@ -36,7 +36,7 @@ examples: http-parser.d examples/*
 
 deps/http-parser/http_parser.o:
 	@echo "Compiling deps/http-parser"
-	git submodule update --init deps/http-parser
+	# git submodule update --init deps/http-parser
 	mkdir -p out/di
 	(cd deps/http-parser; $(MAKE) $(HTTP_PARSER_LIB_BUILD))
 	cp deps/http-parser/http_parser.o out/http-parser.o
@@ -63,5 +63,6 @@ dub: http-parser.d
 
 
 clean:
-		rm -rf deps/*
+		# rm -rf deps/http-parser/*
+		rm -rf deps/http-parser/*.a deps/http-parser/*.o
 		rm -rf out/*
