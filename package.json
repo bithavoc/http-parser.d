@@ -11,5 +11,5 @@
     "lflags-osx": ["-framework", "CoreServices"],
     "sourceFiles-osx-x86_64": ["dub/bin/http-parser-osx-x86_64.d.c.o", "dub/bin/http-parser-osx-x86_64.o"],
     "sourceFiles-linux-x86_64": ["dub/bin/http-parser-linux-x86_64.d.c.o", "dub/bin/http-parser-linux-x86_64.o"],
-    "sourceFiles-linux-armv5te": ["dub/bin/http-parser-linux-armv5tel.d.c.o", "dub/bin/http-parser-linux-armv5tel.o", "out/http-parser.a"]
+    "sourceFiles-linux-arm": ["dub/bin/http-parser-linux-armv5tel.d.c.o", "dub/bin/http-parser-linux-armv5tel.o"]
 }
