@@ -15,7 +15,7 @@ endif
 ifeq (${OS_NAME},Darwin)
 	OS_TYPE=osx
 endif
-DC=dmd
+DC?=dmd
 
 build: http-parser.d
 
@@ -63,5 +63,6 @@ dub: http-parser.d
 
 
 clean:
-		rm -rf deps/*
+		# rm -rf deps/http-parser/*
+		rm -rf deps/http-parser/*.a deps/http-parser/*.o
 		rm -rf out/*

@@ -1,7 +1,7 @@
 {
     "name": "http-parser",
     "description": "joyent/http-parser bindings in D",
-    "copyright": "Copyright © 2013, 2014, Heapsource.com",
+    "copyright": "Copyright © 2013-2014, Heapsource.com, 2014-2016 IoTone, Inc.",
     "homepage": "https://github.com/heapsource/http-parser.d",
     "authors": ["heapsource"],
     "license": "MIT",
@@ -10,5 +10,7 @@
     "sourcePaths": ["lib"],
     "lflags-osx": ["-framework", "CoreServices"],
     "sourceFiles-osx-x86_64": ["dub/bin/http-parser-osx-x86_64.d.c.o", "dub/bin/http-parser-osx-x86_64.o"],
-    "sourceFiles-linux-x86_64": ["dub/bin/http-parser-linux-x86_64.d.c.o", "dub/bin/http-parser-linux-x86_64.o"]
+    "sourceFiles-linux-x86_64": ["dub/bin/http-parser-linux-x86_64.d.c.o", "dub/bin/http-parser-linux-x86_64.o"],
+    "sourceFiles-linux-armv5tel": ["dub/bin/http-parser-linux-armv5tel.d.c.o", "dub/bin/http-parser-linux-armv5tel.o"],
+    "sourceFiles-linux-armv7l": ["dub/bin/http-parser-linux-armv5tel.d.c.o", "dub/bin/http-parser-linux-armv5tel.o"]
 }
