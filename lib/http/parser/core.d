@@ -117,7 +117,7 @@ public struct HttpBodyChunk {
         bool _isFinal;
 
     public:
-        this(ubyte[] buffer, bool isFinal) 
+        this(ubyte[] buffer, bool isFinal)
         {
             _buffer = buffer;
             _isFinal = isFinal;
@@ -187,7 +187,7 @@ public class HttpParser {
     }
 
     void _resetCurrentHeader() {
-      clear(_currentHeader);
+      destroy(_currentHeader);
     }
     /** End Counters **/
   }
@@ -326,7 +326,7 @@ public class HttpParser {
       }
       return CB_OK;
     }
-    
+
     int _on_message_complete() {
       if(this._messageComplete) {
         try {
@@ -354,7 +354,7 @@ public class HttpParser {
       }
       return CB_OK;
     }
-    
+
     int _on_url(ubyte[] data) {
       if(this._onUrl) {
         try {
@@ -366,7 +366,7 @@ public class HttpParser {
       }
       return CB_OK;
     }
-    
+
     int _on_header_field(ubyte[] data) {
       if(_currentHeader.hasValue) {
         int res = _safePublishHeader();
