@@ -17,7 +17,7 @@ void scopeTest(string name, void delegate() cb) {
 
 void scopeWritefln(S...)(S args) {
   write(scopeTabs());
-  writefln!S(args);
+  writefln(args);
 }
 
 void runTest(string title, void delegate() cb, string file = __FILE__, size_t line = __LINE__) {
